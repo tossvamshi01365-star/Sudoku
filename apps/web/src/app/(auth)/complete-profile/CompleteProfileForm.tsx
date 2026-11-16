@@ -1,19 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import { completeProfileAction } from '../../../actions/auth-actions';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { errorMessage as describeError } from '../../../lib/api-client';
+import { authApi } from '../../../lib/auth-api';
+import { useCurrentUser } from '../../../lib/useCurrentUser';
 
 interface CompleteProfileFormProps {
-  initialDisplayName: string;
   ageRequired: boolean;
 }
 
-export function CompleteProfileForm({ initialDisplayName, ageRequired }: CompleteProfileFormProps) {
-  const [displayName, setDisplayName] = useState(initialDisplayName);
+export function CompleteProfileForm({ ageRequired }: CompleteProfileFormProps) {
+  const router = useRouter();
+  // Sends visitors who are not logged in to /login, and finished profiles to /dashboard.
+  const { user, error: loadError } = useCurrentUser('profile-incomplete');
+  const [displayName, setDisplayName] = useState('');
   const [userType, setUserType] = useState<'book_buyer' | 'free_player'>('book_buyer');
   const [isAgeConfirmed, setIsAgeConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Suggest the Google name (or the start of the email) as the display name.
+  useEffect(() => {
+    if (user) setDisplayName((current) => current || user.displayName || user.email.split('@')[0] || '');
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,22 +40,25 @@ export function CompleteProfileForm({ initialDisplayName, ageRequired }: Complet
     }
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append('displayName', displayName.trim());
-    formData.append('userType', userType);
-    formData.append('isAgeConfirmed', isAgeConfirmed ? 'true' : 'false');
-
     try {
-      const res = await completeProfileAction(formData);
-      if (res && !res.success) {
-        setErrorMessage(res.error || 'Failed to complete profile.');
-      }
-    } catch {
-      // In Next.js, redirect() will automatically handle navigation
-    } finally {
+      await authApi.completeProfile({ displayName: displayName.trim(), userType, isAgeConfirmed });
+      router.push('/dashboard');
+    } catch (err) {
+      setErrorMessage(describeError(err));
       setLoading(false);
     }
   };
+
+  if (loadError) {
+    return (
+      <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-800 text-sm rounded-lg p-3.5 leading-snug">
+        {loadError}
+      </div>
+    );
+  }
+  if (!user) {
+    return <p className="text-center text-sm text-slate-500">Loading your account…</p>;
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -80,8 +93,8 @@ export function CompleteProfileForm({ initialDisplayName, ageRequired }: Complet
             onClick={() => setUserType('book_buyer')}
             className={`p-3.5 rounded-xl border text-left transition ${
               userType === 'book_buyer'
-                ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600'
-                : 'border-slate-300 hover:border-slate-400 bg-white'
+                ? 'choice-card choice-card-selected ring-2'
+                : 'choice-card'
             }`}
           >
             <div className="font-semibold text-sm text-slate-900">I bought the book</div>
@@ -95,8 +108,8 @@ export function CompleteProfileForm({ initialDisplayName, ageRequired }: Complet
             onClick={() => setUserType('free_player')}
             className={`p-3.5 rounded-xl border text-left transition ${
               userType === 'free_player'
-                ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600'
-                : 'border-slate-300 hover:border-slate-400 bg-white'
+                ? 'choice-card choice-card-selected ring-2'
+                : 'choice-card'
             }`}
           >
             <div className="font-semibold text-sm text-slate-900">Play free</div>
@@ -129,7 +142,7 @@ export function CompleteProfileForm({ initialDisplayName, ageRequired }: Complet
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold text-sm rounded-lg shadow-sm transition"
+        className="btn-accent w-full py-3 font-semibold text-sm rounded-lg shadow-sm transition"
       >
         {loading ? 'Saving Profile...' : 'Save & Continue to Dashboard'}
       </button>

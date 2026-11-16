@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { signUpAction } from '../../../actions/auth-actions';
-import { Turnstile } from '../../../components/Turnstile';
 import { GoogleSignInButton } from '../../../components/GoogleSignInButton';
+import { errorMessage as describeError } from '../../../lib/api-client';
+import { authApi } from '../../../lib/auth-api';
 
 export function SignUpForm({ ageRequired }: { ageRequired: boolean }) {
   const [displayName, setDisplayName] = useState('');
@@ -12,7 +12,6 @@ export function SignUpForm({ ageRequired }: { ageRequired: boolean }) {
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'book_buyer' | 'free_player'>('book_buyer');
   const [isAgeConfirmed, setIsAgeConfirmed] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -41,23 +40,17 @@ export function SignUpForm({ ageRequired }: { ageRequired: boolean }) {
     }
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append('displayName', displayName.trim());
-    formData.append('email', email.trim());
-    formData.append('password', password);
-    formData.append('userType', userType);
-    formData.append('isAgeConfirmed', isAgeConfirmed ? 'true' : 'false');
-    formData.append('captchaToken', captchaToken);
-
     try {
-      const res = await signUpAction(formData);
-      if (!res.success) {
-        setErrorMessage(res.error || 'Failed to create account. Please try again.');
-      } else {
-        setSuccessMessage(res.message || 'Account created! Please check your email to verify your account.');
-      }
-    } catch {
-      setErrorMessage('An unexpected error occurred. Please try again later.');
+      const res = await authApi.register({
+        displayName: displayName.trim(),
+        email: email.trim(),
+        password,
+        userType,
+        isAgeConfirmed,
+      });
+      setSuccessMessage(res.message);
+    } catch (err) {
+      setErrorMessage(describeError(err));
     } finally {
       setLoading(false);
     }
@@ -80,7 +73,7 @@ export function SignUpForm({ ageRequired }: { ageRequired: boolean }) {
           <div className="pt-2">
             <Link
               href="/login"
-              className="inline-block px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg transition"
+              className="inline-block btn-success px-5 py-2.5 font-medium text-sm rounded-lg transition"
             >
               Go to Login
             </Link>
@@ -165,8 +158,8 @@ export function SignUpForm({ ageRequired }: { ageRequired: boolean }) {
                   onClick={() => setUserType('book_buyer')}
                   className={`p-3 rounded-xl border text-left transition ${
                     userType === 'book_buyer'
-                      ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600'
-                      : 'border-slate-300 hover:border-slate-400 bg-white'
+                      ? 'choice-card choice-card-selected ring-2'
+                      : 'choice-card'
                   }`}
                 >
                   <div className="font-semibold text-xs text-slate-900">I bought the book</div>
@@ -180,8 +173,8 @@ export function SignUpForm({ ageRequired }: { ageRequired: boolean }) {
                   onClick={() => setUserType('free_player')}
                   className={`p-3 rounded-xl border text-left transition ${
                     userType === 'free_player'
-                      ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600'
-                      : 'border-slate-300 hover:border-slate-400 bg-white'
+                      ? 'choice-card choice-card-selected ring-2'
+                      : 'choice-card'
                   }`}
                 >
                   <div className="font-semibold text-xs text-slate-900">Play free</div>
@@ -211,20 +204,17 @@ export function SignUpForm({ ageRequired }: { ageRequired: boolean }) {
               </div>
             )}
 
-            {/* Turnstile CAPTCHA */}
-            <Turnstile onVerify={(token) => setCaptchaToken(token)} />
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-semibold text-sm rounded-lg shadow-sm transition"
+              className="btn-primary w-full py-2.5 font-semibold text-sm rounded-lg shadow-sm transition"
             >
               {loading ? 'Creating Account...' : 'Create Account with Email'}
             </button>
 
             <div className="text-center text-xs text-slate-600 pt-2">
               Already have an account?{' '}
-              <Link href="/login" className="font-semibold text-indigo-600 hover:underline">
+              <Link href="/login" className="link font-semibold hover:underline">
                 Log in
               </Link>
             </div>

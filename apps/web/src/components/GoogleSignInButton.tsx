@@ -1,48 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '../lib/supabase/client';
+import { authApi } from '../lib/auth-api';
 
+/**
+ * Starts Google sign-in. The browser goes to our API, which sends it to Google
+ * and back. Google errors come back as /login?error=... and are shown there.
+ */
 export function GoogleSignInButton({ text = 'Continue with Google' }: { text?: string }) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const supabase = createClient();
-      const origin = window.location.origin;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-      }
-    } catch {
-      setError('Failed to initialize Google Sign-In. Please try again.');
-      setLoading(false);
-    }
+  const handleGoogleSignIn = () => {
+    setLoading(true);
+    window.location.assign(authApi.googleSignInUrl);
   };
 
   return (
     <div className="w-full">
-      {error && (
-        <div className="mb-3 text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-2.5">
-          {error}
-        </div>
-      )}
       <button
         type="button"
         onClick={handleGoogleSignIn}
         disabled={loading}
-        className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-sm text-sm font-semibold text-slate-700 hover:text-slate-900 transition disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-3 btn-google py-3 px-4 border rounded-lg shadow-sm text-sm font-semibold transition disabled:opacity-50"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24">
           <path

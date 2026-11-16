@@ -2,48 +2,80 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { loginAction } from '../../../actions/auth-actions';
-import { Turnstile } from '../../../components/Turnstile';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { GoogleSignInButton } from '../../../components/GoogleSignInButton';
+import { ApiError, errorMessage } from '../../../lib/api-client';
+import { authApi, safeNextPath } from '../../../lib/auth-api';
+
+/** Fixed messages for error codes in the URL. Text from the URL itself is never displayed. */
+const URL_ERRORS: Record<string, string> = {
+  google_failed: 'Google sign-in did not complete. Please try again.',
+  google_mismatch: 'This email is already linked to a different Google account.',
+};
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [captchaToken, setCaptchaToken] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const errorParam = searchParams.get('error');
-    if (errorParam) {
-      setErrorMessage(errorParam);
-    }
+    const code = searchParams.get('error');
+    if (code && URL_ERRORS[code]) setFormError(URL_ERRORS[code]);
   }, [searchParams]);
+
+  // Already logged in? Skip the login form.
+  useEffect(() => {
+    let cancelled = false;
+    authApi
+      .me()
+      .then((user) => {
+        if (!cancelled) router.replace(user.profileCompleted ? '/dashboard' : '/complete-profile');
+      })
+      .catch(() => {
+        // Not logged in: stay on this page.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
+    setFormError(null);
+    setInfoMessage(null);
+    setNeedsVerification(false);
 
     if (!email.trim() || !password) {
-      setErrorMessage('Please enter both your email address and password.');
+      setFormError('Please enter both your email address and password.');
       return;
     }
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('password', password);
-    formData.append('captchaToken', captchaToken);
-
     try {
-      const res = await loginAction(formData);
-      if (res && !res.success) {
-        setErrorMessage(res.error || 'Failed to log in.');
-      }
-    } catch {
-      // In Next.js, redirect() automatically handles navigation
+      const res = await authApi.login(email.trim(), password);
+      const next = res.user.profileCompleted ? safeNextPath(searchParams.get('next')) ?? res.next : '/complete-profile';
+      router.push(next);
+    } catch (err) {
+      setFormError(errorMessage(err));
+      if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') setNeedsVerification(true);
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      const res = await authApi.resendVerification(email.trim());
+      setNeedsVerification(false);
+      setFormError(null);
+      setInfoMessage(res.message);
+    } catch (err) {
+      setFormError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -56,9 +88,25 @@ function LoginForm() {
         <p className="text-sm text-slate-600 mt-1">Log in to continue your Sudoku challenge</p>
       </div>
 
-      {errorMessage && (
-        <div className="mb-5 bg-rose-50 border border-rose-200 text-rose-800 text-sm rounded-lg p-3.5 leading-snug">
-          {errorMessage}
+      {formError && (
+        <div role="alert" className="mb-5 bg-rose-50 border border-rose-200 text-rose-800 text-sm rounded-lg p-3.5 leading-snug">
+          {formError}
+          {needsVerification && (
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={loading}
+              className="link mt-2 block font-semibold hover:underline disabled:opacity-50"
+            >
+              Send me a new confirmation email
+            </button>
+          )}
+        </div>
+      )}
+
+      {infoMessage && (
+        <div role="status" className="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg p-3.5 leading-snug">
+          {infoMessage}
         </div>
       )}
 
@@ -100,7 +148,7 @@ function LoginForm() {
             </label>
             <Link
               href="/forgot-password"
-              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
+              className="link text-xs font-medium hover:underline"
             >
               Forgot password?
             </Link>
@@ -115,20 +163,17 @@ function LoginForm() {
           />
         </div>
 
-        {/* Turnstile CAPTCHA */}
-        <Turnstile onVerify={(token) => setCaptchaToken(token)} />
-
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-semibold text-sm rounded-lg shadow-sm transition"
+          className="btn-primary w-full py-2.5 font-semibold text-sm rounded-lg shadow-sm transition"
         >
           {loading ? 'Logging in...' : 'Log in with Email'}
         </button>
 
         <div className="text-center text-xs text-slate-600 pt-2">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-semibold text-indigo-600 hover:underline">
+          <Link href="/signup" className="link font-semibold hover:underline">
             Create an account
           </Link>
         </div>

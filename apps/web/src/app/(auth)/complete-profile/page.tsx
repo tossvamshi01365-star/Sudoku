@@ -1,36 +1,9 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '../../../lib/supabase/server';
 import { isAgeCheckRequired } from '../../../lib/settings';
 import { CompleteProfileForm } from './CompleteProfileForm';
 
+/** Shown once after the first Google sign-in, to choose book buyer or free player. */
 export default async function CompleteProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  // Check if profile is already completed
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('profile_completed, display_name')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (profile?.profile_completed === true) {
-    redirect('/dashboard');
-  }
-
   const ageRequired = await isAgeCheckRequired();
-  const defaultDisplayName =
-    profile?.display_name ||
-    user.user_metadata?.full_name ||
-    user.user_metadata?.name ||
-    user.email?.split('@')[0] ||
-    '';
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
@@ -45,10 +18,7 @@ export default async function CompleteProfilePage() {
           </p>
         </div>
 
-        <CompleteProfileForm
-          initialDisplayName={defaultDisplayName}
-          ageRequired={ageRequired}
-        />
+        <CompleteProfileForm ageRequired={ageRequired} />
       </div>
     </main>
   );

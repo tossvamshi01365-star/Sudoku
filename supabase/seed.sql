@@ -7,7 +7,7 @@ INSERT INTO public.settings (key, value, description)
 VALUES
     (
         'brand_name',
-        '"BRAND_NAME"',
+        '"Vamshi Finance"',
         'Official display name of the contest website'
     ),
     (

@@ -6,7 +6,12 @@ module.exports = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        // The font itself is chosen in src/app/globals.css (--font-sans).
+        sans: ['var(--font-sans)'],
+      },
+    },
   },
   plugins: [],
 };

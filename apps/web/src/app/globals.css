@@ -1,16 +1,198 @@
+/* ==============================================================================
+   FONT
+   Poppins is self-hosted (served from our own site, no request to Google).
+   To change the font: install another @fontsource package, swap these imports,
+   and update --font-sans below. Only the weights the UI uses are loaded.
+   ============================================================================== */
+@import '@fontsource/poppins/400.css'; /* normal   */
+@import '@fontsource/poppins/500.css'; /* medium   */
+@import '@fontsource/poppins/600.css'; /* semibold */
+@import '@fontsource/poppins/700.css'; /* bold     */
+@import '@fontsource/poppins/900.css'; /* black    */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ==============================================================================
+   THEME: edit colors here and they change across the whole site.
+   ============================================================================== */
 :root {
+  /* ---- Font ---- */
+  --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* ---- Page ---- */
   --background: #f8fafc;
   --foreground: #0f172a;
+
+  /* ---- Primary button: Log in, Create account ---- */
+  --btn-primary-bg: #0f172a;
+  --btn-primary-bg-hover: #1e293b;
+  --btn-primary-bg-disabled: #94a3b8;
+  --btn-primary-text: #ffffff;
+
+  /* ---- Accent button: Send reset link, Update password, Complete profile ---- */
+  --btn-accent-bg: #4f46e5;
+  --btn-accent-bg-hover: #4338ca;
+  --btn-accent-bg-disabled: #818cf8;
+  --btn-accent-text: #ffffff;
+
+  /* ---- Success button: "Go to login" after a successful action ---- */
+  --btn-success-bg: #059669;
+  --btn-success-bg-hover: #047857;
+  --btn-success-text: #ffffff;
+
+  /* ---- Main call-to-action on the landing page: "Play the challenge" ---- */
+  --btn-cta-bg: #fcd34d;
+  --btn-cta-bg-hover: #fde68a;
+  --btn-cta-text: #020617;
+  --btn-cta-focus-ring: #fde68a;
+
+  /* ---- Light button on dark backgrounds: "Join the challenge" in the top bar ---- */
+  --btn-light-bg: #ffffff;
+  --btn-light-bg-hover: #fef3c7;
+  --btn-light-text: #020617;
+
+  /* ---- Outline button on dark backgrounds: "Buy the book" ---- */
+  --btn-outline-light-bg: rgba(255, 255, 255, 0.05);
+  --btn-outline-light-bg-hover: rgba(255, 255, 255, 0.1);
+  --btn-outline-light-border: rgba(255, 255, 255, 0.2);
+  --btn-outline-light-border-hover: rgba(255, 255, 255, 0.4);
+  --btn-outline-light-text: #ffffff;
+  --btn-outline-light-focus-ring: #ffffff;
+
+  /* ---- Muted button: Log out ---- */
+  --btn-muted-bg: #f1f5f9;
+  --btn-muted-bg-hover: #e2e8f0;
+  --btn-muted-text: #334155;
+  --btn-muted-text-hover: #0f172a;
+
+  /* ---- "Continue with Google" button ---- */
+  --btn-google-bg: #ffffff;
+  --btn-google-bg-hover: #f8fafc;
+  --btn-google-border: #cbd5e1;
+  --btn-google-text: #334155;
+  --btn-google-text-hover: #0f172a;
+
+  /* ---- Text links: "Forgot password?", "Create an account"... ---- */
+  --link: #4f46e5;
+  --link-hover: #4338ca;
+
+  /* ---- Choice cards: "I bought the book" / "Play free" ---- */
+  --choice-bg: #ffffff;
+  --choice-border: #cbd5e1;
+  --choice-border-hover: #94a3b8;
+  --choice-selected-bg: rgba(238, 242, 255, 0.6);
+  --choice-selected-border: #4f46e5;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* ==============================================================================
+   BUTTON & LINK STYLES (colors only; size and spacing stay on each element)
+   ============================================================================== */
+@layer components {
+  .btn-primary {
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--btn-primary-bg-hover);
+  }
+  .btn-primary:disabled {
+    background-color: var(--btn-primary-bg-disabled);
+  }
+
+  .btn-accent {
+    background-color: var(--btn-accent-bg);
+    color: var(--btn-accent-text);
+  }
+  .btn-accent:hover:not(:disabled) {
+    background-color: var(--btn-accent-bg-hover);
+  }
+  .btn-accent:disabled {
+    background-color: var(--btn-accent-bg-disabled);
+  }
+
+  .btn-success {
+    background-color: var(--btn-success-bg);
+    color: var(--btn-success-text);
+  }
+  .btn-success:hover {
+    background-color: var(--btn-success-bg-hover);
+  }
+
+  .btn-cta {
+    background-color: var(--btn-cta-bg);
+    color: var(--btn-cta-text);
+    --tw-ring-color: var(--btn-cta-focus-ring);
+  }
+  .btn-cta:hover {
+    background-color: var(--btn-cta-bg-hover);
+  }
+
+  .btn-light {
+    background-color: var(--btn-light-bg);
+    color: var(--btn-light-text);
+  }
+  .btn-light:hover {
+    background-color: var(--btn-light-bg-hover);
+  }
+
+  .btn-outline-light {
+    background-color: var(--btn-outline-light-bg);
+    border-color: var(--btn-outline-light-border);
+    color: var(--btn-outline-light-text);
+    --tw-ring-color: var(--btn-outline-light-focus-ring);
+  }
+  .btn-outline-light:hover {
+    background-color: var(--btn-outline-light-bg-hover);
+    border-color: var(--btn-outline-light-border-hover);
+  }
+
+  .btn-muted {
+    background-color: var(--btn-muted-bg);
+    color: var(--btn-muted-text);
+  }
+  .btn-muted:hover {
+    background-color: var(--btn-muted-bg-hover);
+    color: var(--btn-muted-text-hover);
+  }
+
+  .btn-google {
+    background-color: var(--btn-google-bg);
+    border-color: var(--btn-google-border);
+    color: var(--btn-google-text);
+  }
+  .btn-google:hover:not(:disabled) {
+    background-color: var(--btn-google-bg-hover);
+    color: var(--btn-google-text-hover);
+  }
+
+  .link {
+    color: var(--link);
+  }
+  .link:hover {
+    color: var(--link-hover);
+  }
+
+  .choice-card {
+    background-color: var(--choice-bg);
+    border-color: var(--choice-border);
+  }
+  .choice-card:hover {
+    border-color: var(--choice-border-hover);
+  }
+  .choice-card-selected,
+  .choice-card-selected:hover {
+    background-color: var(--choice-selected-bg);
+    border-color: var(--choice-selected-border);
+    --tw-ring-color: var(--choice-selected-border);
+  }
 }
 
 @keyframes hero-cube-float {

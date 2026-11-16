@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { forgotPasswordAction } from '../../../actions/auth-actions';
-import { Turnstile } from '../../../components/Turnstile';
+import { errorMessage } from '../../../lib/api-client';
+import { authApi } from '../../../lib/auth-api';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [captchaToken, setCaptchaToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,19 +22,11 @@ export default function ForgotPasswordPage() {
     }
 
     setLoading(true);
-    const formData = new FormData();
-    formData.append('email', email);
-    formData.append('captchaToken', captchaToken);
-
     try {
-      const res = await forgotPasswordAction(formData);
-      if (res.success) {
-        setMessage(res.message || 'If an account exists, a reset link has been sent to your email.');
-      } else {
-        setError(res.error || 'Failed to send reset link.');
-      }
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+      const res = await authApi.forgotPassword(email.trim());
+      setMessage(res.message);
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -60,7 +51,7 @@ export default function ForgotPasswordPage() {
             <div className="pt-2">
               <Link
                 href="/login"
-                className="inline-block px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg transition"
+                className="inline-block btn-success px-5 py-2.5 font-medium text-sm rounded-lg transition"
               >
                 Back to Login
               </Link>
@@ -88,19 +79,17 @@ export default function ForgotPasswordPage() {
               />
             </div>
 
-            <Turnstile onVerify={(token) => setCaptchaToken(token)} />
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold text-sm rounded-lg shadow-sm transition"
+              className="btn-accent w-full py-3 font-semibold text-sm rounded-lg shadow-sm transition"
             >
               {loading ? 'Sending link...' : 'Send Reset Link'}
             </button>
 
             <div className="text-center text-xs text-slate-600 pt-2">
               Remember your password?{' '}
-              <Link href="/login" className="font-semibold text-indigo-600 hover:underline">
+              <Link href="/login" className="link font-semibold hover:underline">
                 Back to login
               </Link>
             </div>

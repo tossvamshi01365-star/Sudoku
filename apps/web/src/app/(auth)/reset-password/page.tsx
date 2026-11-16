@@ -1,17 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { resetPasswordAction } from '../../../actions/auth-actions';
+import { errorMessage } from '../../../lib/api-client';
+import { authApi, takeTokenFromUrlHash } from '../../../lib/auth-api';
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
+  // undefined = still reading the link, null = no token in the link.
+  const [token, setToken] = useState<string | null | undefined>(undefined);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // The token arrives in the link as #token=... (never sent to any server in the URL).
+  useEffect(() => {
+    setToken(takeTokenFromUrlHash());
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,23 +33,13 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    if (!token) return;
     setLoading(true);
-    const formData = new FormData();
-    formData.append('password', password);
-    formData.append('confirmPassword', confirmPassword);
-
     try {
-      const res = await resetPasswordAction(formData);
-      if (res.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000);
-      } else {
-        setError(res.error || 'Failed to update password.');
-      }
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+      await authApi.resetPassword(token, password);
+      setSuccess(true);
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -63,7 +59,21 @@ export default function ResetPasswordPage() {
               ✓
             </div>
             <h2 className="font-semibold text-emerald-900">Password Updated!</h2>
-            <p className="text-sm">Your password has been changed successfully. Redirecting you to the dashboard...</p>
+            <p className="text-sm">
+              Your password has been changed and you have been logged out on every device. Please log in with your new password.
+            </p>
+            <div className="pt-2">
+              <Link href="/login" className="inline-block btn-success px-5 py-2.5 font-medium text-sm rounded-lg transition">
+                Go to Login
+              </Link>
+            </div>
+          </div>
+        ) : token === null ? (
+          <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-6 text-center space-y-4">
+            <p className="text-sm leading-relaxed">This reset link is incomplete or invalid. Please request a new one.</p>
+            <Link href="/forgot-password" className="inline-block btn-accent px-5 py-2.5 font-medium text-sm rounded-lg transition">
+              Request a new link
+            </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -105,14 +115,14 @@ export default function ResetPasswordPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold text-sm rounded-lg shadow-sm transition"
+              disabled={loading || !token}
+              className="btn-accent w-full py-3 font-semibold text-sm rounded-lg shadow-sm transition"
             >
               {loading ? 'Updating Password...' : 'Update Password'}
             </button>
 
             <div className="text-center text-xs text-slate-600 pt-2">
-              <Link href="/login" className="text-indigo-600 hover:underline">
+              <Link href="/login" className="link hover:underline">
                 Cancel and return to login
               </Link>
             </div>
