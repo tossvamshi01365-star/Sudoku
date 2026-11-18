@@ -4,7 +4,7 @@ Our own auth: Supabase is used **only as the PostgreSQL database**. Supabase Aut
 
 ## Run locally
 
-1. `cp .env.example .env` and fill in:
+1. Create `apps/api/.env` (it is ignored by git) and fill in:
    - `DATABASE_URL`: Supabase Dashboard → **Connect** → "Session pooler" connection string (or a local Postgres URL).
    - `DATABASE_SSL=true` and `DATABASE_SSL_CA_FILE` for Supabase (Project Settings → Database → SSL Configuration → download certificate).
    - `COOKIE_SECRET` and `JWT_SECRET`: two **different** random values. Generate each with
